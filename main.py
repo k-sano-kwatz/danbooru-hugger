@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from starlette import status
 
 from config import settings
+from logger import logger
 
 ALGORITHM = 'HS256'
 
@@ -134,6 +135,7 @@ async def get_current_active_user(current_user: Annotated[User, Depends(get_curr
 
 @app.get('/')
 def read_root():
+    logger.debug('test')
     return {
         'Hello': 'World',
     }
