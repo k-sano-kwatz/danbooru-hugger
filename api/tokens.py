@@ -19,15 +19,18 @@ ALGORITHM = 'HS256'
 router = APIRouter(tags=['tokens'])
 
 
+class TokenRequest(BaseModel):
+    username: str
+    password: str
+
+
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str
 
 
-@router.post('/token')
-async def get_access_token(form: Annotated[OAuth2PasswordRequestForm, Depends()], db: Session = Depends(get_db))\
-        -> TokenResponse:
-    logger.debug(f'request: username=\'{form.username}\' password=\'{form.password}\'')
+def authenticate(username: str, password: str, db: Session) -> TokenResponse:
+    logger.debug(f'request: username=\'{username}\' password=\'{password}\'')
 
     exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -38,16 +41,16 @@ async def get_access_token(form: Annotated[OAuth2PasswordRequestForm, Depends()]
     )
 
     # Get user from database
-    user = user_repository.find_by_username(db, form.username)
+    user = user_repository.find_by_username(db, username)
 
     # If user does not exist
     if not user:
-        logger.debug(f'No user with username {form.username} was found.')
+        logger.debug(f'No user with username {username} was found.')
         raise exception
 
     # If password does not match
-    if not cryptography.verify(form.password, user.hashed_password):
-        logger.debug(f'User {user.username} does not have given password {form.password}.')
+    if not cryptography.verify(password, user.hashed_password):
+        logger.debug(f'User {user.username} does not have given password {password}.')
         raise exception
 
     # Generate claims
@@ -65,3 +68,14 @@ async def get_access_token(form: Annotated[OAuth2PasswordRequestForm, Depends()]
     logger.debug(f'response: {response}')
 
     return response
+
+
+@router.post('/token')
+async def get_access_token(form: Annotated[OAuth2PasswordRequestForm, Depends()], db: Session = Depends(get_db))\
+        -> TokenResponse:
+    return authenticate(form.username, form.password, db)
+
+
+@router.post('/token2')
+async def get_access_token(request: TokenRequest, db: Session = Depends(get_db)) -> TokenResponse:
+    return authenticate(request.username, request.password, db)
