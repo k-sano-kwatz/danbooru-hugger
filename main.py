@@ -11,7 +11,6 @@ from starlette import status
 from config import settings
 
 ALGORITHM = 'HS256'
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 fake_users_db = {
     'johndoe': {
@@ -153,7 +152,7 @@ async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm,
             },
         )
 
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token_expires = timedelta(minutes=settings.jwt_access_token_expire_minutes)
     access_token = create_access_token(
         data={
             'sub': user.username,
