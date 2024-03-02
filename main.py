@@ -1,16 +1,16 @@
-from datetime import timedelta, datetime, timezone
 from typing import Union, Annotated
 
 from fastapi import FastAPI, Depends, HTTPException
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
 from passlib.context import CryptContext
 from pydantic import BaseModel
 from starlette import status
 
-import models
+from api import tokens
 from config import settings
-from database import engine
+from database import models
+from database.database import engine
 from logger import logger
 
 models.Base.metadata.create_all(bind=engine)
@@ -35,6 +35,7 @@ fake_users_db = {
 }
 
 app = FastAPI()
+app.include_router(tokens.router)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='token')
 
@@ -43,11 +44,6 @@ class Item(BaseModel):
     name: str
     price: float
     is_offer: Union[bool, None] = None
-
-
-class Token(BaseModel):
-    access_token: str
-    token_type: str
 
 
 class TokenData(BaseModel):
@@ -68,41 +64,10 @@ class UserInDB(User):
 pwd_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
 
 
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
-
-
 def get_user(db, username: str):
     if username in db:
         user_dict = db[username]
         return UserInDB(**user_dict)
-
-
-def authenticate_user(fake_db, username: str, password: str):
-    user = get_user(fake_db, username)
-
-    if not user:
-        return False
-
-    if not verify_password(password, user.hashed_password):
-        return False
-
-    return user
-
-
-def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None):
-    to_encode = data.copy()
-
-    if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
-    else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=15)
-
-    to_encode.update({
-        'exp': expire,
-    })
-
-    return jwt.encode(to_encode, settings.jwt.secret_key, algorithm=ALGORITHM)
 
 
 async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
@@ -143,30 +108,6 @@ def read_root():
     return {
         'Hello': 'World',
     }
-
-
-@app.post('/token')
-async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> Token:
-    user = authenticate_user(fake_users_db, form_data.username, form_data.password)
-
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail='Incorrect username or password',
-            headers={
-                'WWW-Authenticate': 'Bearer',
-            },
-        )
-
-    access_token_expires = timedelta(minutes=settings.jwt.access_token_expire_minutes)
-    access_token = create_access_token(
-        data={
-            'sub': user.username,
-        },
-        expires_delta=access_token_expires,
-    )
-
-    return Token(access_token=access_token, token_type='bearer')
 
 
 @app.get('/users/me')
