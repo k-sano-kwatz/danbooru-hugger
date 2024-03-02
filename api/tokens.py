@@ -27,6 +27,23 @@ class TokenRequest(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str
+    refresh_token: str
+
+
+def generate_token(typ: str, sub: int, exp_delta: int):
+    # Generate claims
+    claims = {
+        'typ': typ,
+        'sub': sub,
+        'iat': datetime.now(timezone.utc),
+        'exp': datetime.now(timezone.utc) + timedelta(minutes=exp_delta),
+    }
+    logger.debug(f'claims: {claims}')
+
+    # Generate access token
+    access_token = jwt.encode(claims, settings.jwt.secret_key, algorithm=ALGORITHM)
+
+    return access_token
 
 
 def authenticate(username: str, password: str, db: Session) -> TokenResponse:
@@ -53,20 +70,12 @@ def authenticate(username: str, password: str, db: Session) -> TokenResponse:
         logger.debug(f'User {user.username} does not have given password {password}.')
         raise exception
 
-    # Generate claims
-    claims = {
-        'typ': 'access_token',
-        'sub': user.id,
-        'iat': datetime.now(timezone.utc),
-        'exp': datetime.now(timezone.utc) + timedelta(minutes=settings.jwt.access_token_expire_minutes),
-    }
-    logger.debug(f'claims: {claims}')
-
-    # Generate access token
-    access_token = jwt.encode(claims, settings.jwt.secret_key, algorithm=ALGORITHM)
+    # Generate access token and refresh token
+    access_token = generate_token('access_token', user.id, settings.jwt.access_token_expire_minutes)
+    refresh_token = generate_token('refresh_token', user.id, settings.jwt.refresh_token_expire_minutes)
 
     # Generate response
-    response = TokenResponse(access_token=access_token, token_type='bearer')
+    response = TokenResponse(access_token=access_token, token_type='bearer', refresh_token=refresh_token)
     logger.debug(f'response: {response}')
 
     return response

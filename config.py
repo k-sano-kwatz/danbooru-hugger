@@ -5,6 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Jwt(BaseModel):
     secret_key: str
     access_token_expire_minutes: int
+    refresh_token_expire_minutes: int
 
 
 class Logging(BaseModel):
