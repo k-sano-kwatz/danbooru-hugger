@@ -1,4 +1,6 @@
 import logging
 
+from config import settings
+
 logger = logging.getLogger('uvicorn.error')
-logger.setLevel(logging.DEBUG)
+logger.setLevel(settings.logging.level)

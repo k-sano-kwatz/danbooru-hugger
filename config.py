@@ -7,8 +7,13 @@ class Jwt(BaseModel):
     access_token_expire_minutes: int
 
 
+class Logging(BaseModel):
+    level: str
+
+
 class Settings(BaseSettings):
     jwt: Jwt
+    logging: Logging
 
     model_config = SettingsConfigDict(env_file='.env', env_nested_delimiter='.')
 
