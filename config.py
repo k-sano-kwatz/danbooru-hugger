@@ -1,11 +1,16 @@
+from pydantic import BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class Settings(BaseSettings):
-    jwt_secret_key: str
-    jwt_access_token_expire_minutes: int
+class Jwt(BaseModel):
+    secret_key: str
+    access_token_expire_minutes: int
 
-    model_config = SettingsConfigDict(env_file='.env')
+
+class Settings(BaseSettings):
+    jwt: Jwt
+
+    model_config = SettingsConfigDict(env_file='.env', env_nested_delimiter='.')
 
 
 settings = Settings()

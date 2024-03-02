@@ -97,7 +97,7 @@ def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None
         'exp': expire,
     })
 
-    return jwt.encode(to_encode, settings.jwt_secret_key, algorithm=ALGORITHM)
+    return jwt.encode(to_encode, settings.jwt.secret_key, algorithm=ALGORITHM)
 
 
 async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
@@ -109,7 +109,7 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
         },
     )
     try:
-        payload = jwt.decode(token, settings.jwt_secret_key, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, settings.jwt.secret_key, algorithms=[ALGORITHM])
         username: str = payload.get('sub')
         if username is None:
             raise credentials_exception
@@ -152,7 +152,7 @@ async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm,
             },
         )
 
-    access_token_expires = timedelta(minutes=settings.jwt_access_token_expire_minutes)
+    access_token_expires = timedelta(minutes=settings.jwt.access_token_expire_minutes)
     access_token = create_access_token(
         data={
             'sub': user.username,
