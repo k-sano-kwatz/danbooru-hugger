@@ -56,6 +56,7 @@ def authenticate(username: str, password: str, db: Session) -> TokenResponse:
     # Generate claims
     claims = {
         'sub': user.id,
+        'iat': datetime.now(timezone.utc),
         'exp': datetime.now(timezone.utc) + timedelta(minutes=settings.jwt.access_token_expire_minutes),
     }
     logger.debug(f'claims: {claims}')
