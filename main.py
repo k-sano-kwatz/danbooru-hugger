@@ -9,6 +9,7 @@ from starlette import status
 
 from api import tokens
 from config import settings
+from cryptography import cryptography
 from database import models
 from database.database import engine
 from logger import logger
@@ -62,6 +63,14 @@ class UserInDB(User):
 
 
 pwd_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
+
+
+class HashRequest(BaseModel):
+    plain_text: str
+
+
+class HashResponse(BaseModel):
+    hashed_text: str
 
 
 def get_user(db, username: str):
@@ -136,3 +145,8 @@ def update_item(item_id: int, item: Item):
         'item_name': item.name,
         'item_id': item_id,
     }
+
+
+@app.put('/hash')
+def hash_text(request: HashRequest):
+    return HashResponse(hashed_text=cryptography.hash(request.plain_text))
