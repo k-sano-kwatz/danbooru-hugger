@@ -8,8 +8,8 @@ from passlib.context import CryptContext
 from pydantic import BaseModel
 from starlette import status
 
+from config import settings
 
-SECRET_KEY = '<32 byte hex string>'
 ALGORITHM = 'HS256'
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
@@ -98,7 +98,7 @@ def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None
         'exp': expire,
     })
 
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return jwt.encode(to_encode, settings.jwt_secret_key, algorithm=ALGORITHM)
 
 
 async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
@@ -110,7 +110,7 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
         },
     )
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, settings.jwt_secret_key, algorithms=[ALGORITHM])
         username: str = payload.get('sub')
         if username is None:
             raise credentials_exception
