@@ -8,8 +8,12 @@ from passlib.context import CryptContext
 from pydantic import BaseModel
 from starlette import status
 
+import models
 from config import settings
+from database import engine
 from logger import logger
+
+models.Base.metadata.create_all(bind=engine)
 
 ALGORITHM = 'HS256'
 
