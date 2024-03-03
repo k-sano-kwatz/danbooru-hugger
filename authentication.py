@@ -5,10 +5,14 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError, ExpiredSignatureError
 from jose.exceptions import JWTClaimsError
 from paprika import data
+from sqlalchemy.orm import Session
 from starlette import status
 
 from api.tokens import ALGORITHM, Claims
 from config import settings
+from database.database import get_db
+from database.models import User
+from database.repository import user_repository
 from logger import logger
 
 oauth2_token = OAuth2PasswordBearer(tokenUrl='token')
@@ -56,3 +60,16 @@ async def oauth2_refresh_token(claims: Annotated[Claims, Depends(oauth2_claims)]
         raise exception
 
     return RefreshToken(claims.sub)
+
+
+async def oauth2_user(refresh_token: Annotated[RefreshToken, Depends(oauth2_refresh_token)],
+                      db: Session = Depends(get_db)) -> User:
+    # Get user from database
+    user = user_repository.find_by_id(db, int(refresh_token.sub))
+
+    # If user does not exist
+    if not user:
+        logger.debug(f'No user with id {refresh_token.sub} was found.')
+        raise exception
+
+    return user
