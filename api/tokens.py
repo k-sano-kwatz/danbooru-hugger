@@ -34,7 +34,7 @@ def generate_token(typ: str, sub: int, exp_delta: int):
     # Generate claims
     claims = {
         'typ': typ,
-        'sub': sub,
+        'sub': str(sub),
         'iat': datetime.now(timezone.utc),
         'exp': datetime.now(timezone.utc) + timedelta(minutes=exp_delta),
     }
