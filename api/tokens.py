@@ -5,28 +5,19 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.encoders import jsonable_encoder
 from fastapi.security import OAuth2PasswordRequestForm
 from jose import jwt
-from paprika import data
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from starlette import status
 
+from authentication import oauth2_active_user, oauth2_token, Claims, ALGORITHM
 from config import settings
 from cryptography import cryptography
 from database.database import get_db
+from database.models import User
 from database.repository import user_repository
 from logger import logger
 
-ALGORITHM = 'HS256'
-
 router = APIRouter(tags=['tokens'])
-
-
-@data
-class Claims:
-    typ: str
-    sub: str
-    iat: int
-    exp: int
 
 
 class TokenRequest(BaseModel):
@@ -105,3 +96,16 @@ async def get_access_token(form: Annotated[OAuth2PasswordRequestForm, Depends()]
 @router.post('/token2')
 async def get_access_token(request: TokenRequest, db: Session = Depends(get_db)) -> TokenResponse:
     return authenticate(request.username, request.password, db)
+
+
+@router.get('/refresh_token')
+async def refresh_access_token(user: Annotated[User, Depends(oauth2_active_user)],
+                               refresh_token: Annotated[str, Depends(oauth2_token)]) -> TokenResponse:
+    # Generate access token
+    access_token = generate_token('access_token', user.id, settings.jwt.access_token_expire_minutes)
+
+    # Generate response
+    response = TokenResponse(access_token=access_token, token_type='bearer', refresh_token=refresh_token)
+    logger.debug(f'response: {response}')
+
+    return response

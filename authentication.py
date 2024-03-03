@@ -8,12 +8,13 @@ from paprika import data
 from sqlalchemy.orm import Session
 from starlette import status
 
-from api.tokens import ALGORITHM, Claims
 from config import settings
 from database.database import get_db
 from database.models import User
 from database.repository import user_repository
 from logger import logger
+
+ALGORITHM = 'HS256'
 
 oauth2_token = OAuth2PasswordBearer(tokenUrl='token')
 
@@ -24,6 +25,14 @@ exception = HTTPException(
         'WWW-Authenticate': 'Bearer',
     },
 )
+
+
+@data
+class Claims:
+    typ: str
+    sub: str
+    iat: int
+    exp: int
 
 
 @data
