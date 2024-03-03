@@ -71,8 +71,8 @@ async def oauth2_refresh_token(claims: Annotated[Claims, Depends(oauth2_claims)]
     return RefreshToken(claims.sub)
 
 
-async def oauth2_user(refresh_token: Annotated[RefreshToken, Depends(oauth2_refresh_token)],
-                      db: Session = Depends(get_db)) -> User:
+async def oauth2_refresh_token_user(refresh_token: Annotated[RefreshToken, Depends(oauth2_refresh_token)],
+                                    db: Session = Depends(get_db)) -> User:
     # Get user from database
     user = user_repository.find_by_id(db, int(refresh_token.sub))
 
@@ -84,7 +84,7 @@ async def oauth2_user(refresh_token: Annotated[RefreshToken, Depends(oauth2_refr
     return user
 
 
-async def oauth2_active_user(user: Annotated[User, Depends(oauth2_user)]) -> User:
+async def oauth2_active_refresh_token_user(user: Annotated[User, Depends(oauth2_refresh_token_user)]) -> User:
     # If user is not active
     if not user.is_active:
         logger.debug(f'User {user.username} is not active.')

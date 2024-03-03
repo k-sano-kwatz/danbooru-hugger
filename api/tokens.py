@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from starlette import status
 
-from authentication import oauth2_active_user, oauth2_token, Claims, ALGORITHM
+from authentication import oauth2_active_refresh_token_user, oauth2_token, Claims, ALGORITHM
 from config import settings
 from cryptography import cryptography
 from database.database import get_db
@@ -99,7 +99,7 @@ async def get_access_token(request: TokenRequest, db: Session = Depends(get_db))
 
 
 @router.get('/refresh_token')
-async def refresh_access_token(user: Annotated[User, Depends(oauth2_active_user)],
+async def refresh_access_token(user: Annotated[User, Depends(oauth2_active_refresh_token_user)],
                                refresh_token: Annotated[str, Depends(oauth2_token)]) -> TokenResponse:
     # Generate access token
     access_token = generate_token('access_token', user.id, settings.jwt.access_token_expire_minutes)
