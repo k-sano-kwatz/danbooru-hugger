@@ -65,6 +65,11 @@ def authenticate(username: str, password: str, db: Session) -> TokenResponse:
         logger.debug(f'No user with username {username} was found.')
         raise exception
 
+    # If user is not active
+    if not user.is_active:
+        logger.debug(f'User {user.username} is not active.')
+        raise exception
+
     # If password does not match
     if not cryptography.verify(password, user.hashed_password):
         logger.debug(f'User {user.username} does not have given password {password}.')
