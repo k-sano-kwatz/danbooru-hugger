@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from starlette import status
 
 from api import tokens
+from authentication import oauth2_token
 from config import settings
 from cryptography import cryptography
 from database import models
@@ -125,7 +126,7 @@ def read_users_me(current_user: Annotated[User, Depends(get_current_active_user)
 
 
 @app.get('/items/')
-def read_items(token: Annotated[str, Depends(oauth2_scheme)]):
+def read_items(token: Annotated[str, Depends(oauth2_token)]):
     return {
         'token': token,
     }
