@@ -36,6 +36,11 @@ class Claims:
 
 
 @data
+class AccessToken:
+    sub: str
+
+
+@data
 class RefreshToken:
     sub: str
 
@@ -62,6 +67,15 @@ async def oauth2_claims(token: Annotated[str, Depends(oauth2_token)]) -> Claims:
     return claims
 
 
+async def oauth2_access_token(claims: Annotated[Claims, Depends(oauth2_claims)]) -> AccessToken:
+    # If the type of claims is not access token
+    if claims.typ != 'access_token':
+        logger.debug(f'Claims {claims} is not access token.')
+        raise exception
+
+    return AccessToken(claims.sub)
+
+
 async def oauth2_refresh_token(claims: Annotated[Claims, Depends(oauth2_claims)]) -> RefreshToken:
     # If the type of claims is not refresh token
     if claims.typ != 'refresh_token':
@@ -69,6 +83,19 @@ async def oauth2_refresh_token(claims: Annotated[Claims, Depends(oauth2_claims)]
         raise exception
 
     return RefreshToken(claims.sub)
+
+
+async def oauth2_access_token_user(access_token: Annotated[AccessToken, Depends(oauth2_access_token)],
+                                   db: Session = Depends(get_db)) -> User:
+    # Get user from database
+    user = user_repository.find_by_id(db, int(access_token.sub))
+
+    # If user does not exist
+    if not user:
+        logger.debug(f'No user with id {access_token.sub} was found.')
+        raise exception
+
+    return user
 
 
 async def oauth2_refresh_token_user(refresh_token: Annotated[RefreshToken, Depends(oauth2_refresh_token)],
@@ -79,6 +106,15 @@ async def oauth2_refresh_token_user(refresh_token: Annotated[RefreshToken, Depen
     # If user does not exist
     if not user:
         logger.debug(f'No user with id {refresh_token.sub} was found.')
+        raise exception
+
+    return user
+
+
+async def oauth2_active_access_token_user(user: Annotated[User, Depends(oauth2_access_token_user)]) -> User:
+    # If user is not active
+    if not user.is_active:
+        logger.debug(f'User {user.username} is not active.')
         raise exception
 
     return user
