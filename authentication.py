@@ -127,3 +127,13 @@ async def oauth2_active_refresh_token_user(user: Annotated[User, Depends(oauth2_
         raise exception
 
     return user
+
+
+async def oauth2_active_admin_access_token_user(user: Annotated[User, Depends(oauth2_active_access_token_user)])\
+        -> User:
+    # If user is not admin
+    if not user.is_admin:
+        logger.debug(f'User {user.username} is not admin.')
+        raise exception
+
+    return user
