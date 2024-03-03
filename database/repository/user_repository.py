@@ -1,8 +1,12 @@
-from typing import Optional
+from typing import Optional, Type
 
 from sqlalchemy.orm import Session
 
 from database.models import User
+
+
+def find(db: Session) -> list[Type[User]]:
+    return db.query(User).all()
 
 
 def find_by_id(db: Session, user_id: int) -> Optional[User]:

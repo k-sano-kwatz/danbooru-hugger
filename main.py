@@ -3,7 +3,7 @@ from typing import Union, Annotated
 from fastapi import FastAPI, Depends
 from pydantic import BaseModel
 
-from api import tokens
+from api import tokens, users
 from authentication import oauth2_token, oauth2_active_access_token_user
 from cryptography import cryptography
 from database import models
@@ -15,6 +15,7 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 app.include_router(tokens.router)
+app.include_router(users.router)
 
 
 class Item(BaseModel):
