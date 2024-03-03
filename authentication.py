@@ -73,3 +73,12 @@ async def oauth2_user(refresh_token: Annotated[RefreshToken, Depends(oauth2_refr
         raise exception
 
     return user
+
+
+async def oauth2_active_user(user: Annotated[User, Depends(oauth2_user)]) -> User:
+    # If user is not active
+    if not user.is_active:
+        logger.debug(f'User {user.username} is not active.')
+        raise exception
+
+    return user
