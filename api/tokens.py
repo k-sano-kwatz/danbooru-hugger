@@ -2,8 +2,10 @@ from datetime import datetime, timezone, timedelta
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.encoders import jsonable_encoder
 from fastapi.security import OAuth2PasswordRequestForm
 from jose import jwt
+from paprika import data
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from starlette import status
@@ -19,6 +21,14 @@ ALGORITHM = 'HS256'
 router = APIRouter(tags=['tokens'])
 
 
+@data
+class Claims:
+    typ: str
+    sub: str
+    iat: int
+    exp: int
+
+
 class TokenRequest(BaseModel):
     username: str
     password: str
@@ -31,17 +41,17 @@ class TokenResponse(BaseModel):
 
 
 def generate_token(typ: str, sub: int, exp_delta: int):
+    # Generate iat and exp
+    now = datetime.now(timezone.utc)
+    iat = int(now.timestamp())
+    exp = int((now + timedelta(minutes=exp_delta)).timestamp())
+
     # Generate claims
-    claims = {
-        'typ': typ,
-        'sub': str(sub),
-        'iat': datetime.now(timezone.utc),
-        'exp': datetime.now(timezone.utc) + timedelta(minutes=exp_delta),
-    }
+    claims = Claims(typ, str(sub), iat, exp)
     logger.debug(f'claims: {claims}')
 
     # Generate access token
-    access_token = jwt.encode(claims, settings.jwt.secret_key, algorithm=ALGORITHM)
+    access_token = jwt.encode(jsonable_encoder(claims), settings.jwt.secret_key, algorithm=ALGORITHM)
 
     return access_token
 
