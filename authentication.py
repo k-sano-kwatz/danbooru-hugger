@@ -137,3 +137,13 @@ async def oauth2_active_admin_access_token_user(user: Annotated[User, Depends(oa
         raise exception
 
     return user
+
+
+async def oauth2_path_verified_active_access_token_user(user: Annotated[User, Depends(oauth2_active_access_token_user)],
+                                                        user_id: int) -> User:
+    # If non-admin user is trying to access other user
+    if not user.is_admin and user.id != user_id:
+        logger.debug(f'Non-admin user {user.username} is forbidden from accessing other user with id {user_id}.')
+        raise exception
+
+    return user
