@@ -19,3 +19,7 @@ def find_by_username(db: Session, username: str) -> Optional[User]:
 
 def save(db: Session, user: User):
     db.add(user)
+
+
+def delete(db: Session, user: User):
+    db.delete(user)

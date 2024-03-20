@@ -121,3 +121,15 @@ async def update_user(user: UserPatch, user_with_access_token_user: Tuple[User, 
     db.commit()
 
     return db_user
+
+
+@router.delete('/{user_id}', status_code=status.HTTP_204_NO_CONTENT)
+async def delete_user(user_with_access_token_user: Tuple[User, User] = Depends(
+        oauth2_path_verified_user_with_active_access_token_user), db: Session = Depends(get_db)):
+    db_user, _ = user_with_access_token_user
+
+    # Delete record
+    user_repository.delete(db, db_user)
+
+    # Commit
+    db.commit()
