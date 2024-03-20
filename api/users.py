@@ -4,6 +4,7 @@ from typing import Tuple
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
+from starlette import status
 
 from authentication import oauth2_active_access_token_user, oauth2_active_admin_access_token_user, \
     oauth2_path_verified_user_with_active_access_token_user
@@ -41,7 +42,8 @@ async def get_users(db: Session = Depends(get_db)):
     return user_repository.find(db)
 
 
-@router.post('', dependencies=[Depends(oauth2_active_admin_access_token_user)], response_model=UserGet)
+@router.post('', dependencies=[Depends(oauth2_active_admin_access_token_user)], response_model=UserGet,
+             status_code=status.HTTP_201_CREATED)
 async def create_user(user: UserPost, db: Session = Depends(get_db)):
     # Generate user record
     db_user = User(
