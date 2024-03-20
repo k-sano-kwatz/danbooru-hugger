@@ -74,15 +74,13 @@ async def update_user(user: UserPut, user_with_access_token_user: Tuple[User, Us
         oauth2_path_verified_user_with_active_access_token_user), db: Session = Depends(get_db)):
     db_user, access_token_user = user_with_access_token_user
 
-    # Update user data
-    db_user.username = user.username
-    db_user.hashed_password = cryptography.hash(user.password)
-    db_user.email = user.email
     # If non-admin user is trying to promote to admin user
     if not access_token_user.is_admin and user.is_admin:
         raise exception_forbidden
-    db_user.is_admin = user.is_admin
-    db_user.is_active = user.is_active
+
+    # Update user data
+    db_user.update(user.dict(exclude={'password'}))
+    db_user.hashed_password = cryptography.hash(user.password)
 
     # Update record
     user_repository.save(db, db_user)
