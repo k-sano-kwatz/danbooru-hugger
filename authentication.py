@@ -18,12 +18,22 @@ ALGORITHM = 'HS256'
 
 oauth2_token = OAuth2PasswordBearer(tokenUrl='token')
 
-exception = HTTPException(
+exception_unauthorized = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,
     detail='Could not validate credentials',
     headers={
         'WWW-Authenticate': 'Bearer',
     },
+)
+
+exception_forbidden = HTTPException(
+    status_code=status.HTTP_403_FORBIDDEN,
+    detail='Access is forbidden',
+)
+
+exception_not_found = HTTPException(
+    status_code=status.HTTP_404_NOT_FOUND,
+    detail='Not found',
 )
 
 
@@ -54,15 +64,15 @@ async def oauth2_claims(token: Annotated[str, Depends(oauth2_token)]) -> Claims:
 
     except ExpiredSignatureError:
         logger.debug(f'Token {token} is expired.')
-        raise exception
+        raise exception_unauthorized
 
     except JWTClaimsError:
         logger.debug(f'Token {token} has invalid claims.')
-        raise exception
+        raise exception_unauthorized
 
     except JWTError:
         logger.debug(f'Token {token} is invalid.')
-        raise exception
+        raise exception_unauthorized
 
     return claims
 
@@ -71,7 +81,7 @@ async def oauth2_access_token(claims: Annotated[Claims, Depends(oauth2_claims)])
     # If the type of claims is not access token
     if claims.typ != 'access_token':
         logger.debug(f'Claims {claims} is not access token.')
-        raise exception
+        raise exception_forbidden
 
     return AccessToken(claims.sub)
 
@@ -80,7 +90,7 @@ async def oauth2_refresh_token(claims: Annotated[Claims, Depends(oauth2_claims)]
     # If the type of claims is not refresh token
     if claims.typ != 'refresh_token':
         logger.debug(f'Claims {claims} is not refresh token.')
-        raise exception
+        raise exception_forbidden
 
     return RefreshToken(claims.sub)
 
@@ -93,7 +103,7 @@ async def oauth2_access_token_user(access_token: Annotated[AccessToken, Depends(
     # If user does not exist
     if not user:
         logger.debug(f'No user with id {access_token.sub} was found.')
-        raise exception
+        raise exception_unauthorized
 
     return user
 
@@ -106,7 +116,7 @@ async def oauth2_refresh_token_user(refresh_token: Annotated[RefreshToken, Depen
     # If user does not exist
     if not user:
         logger.debug(f'No user with id {refresh_token.sub} was found.')
-        raise exception
+        raise exception_unauthorized
 
     return user
 
@@ -115,7 +125,7 @@ async def oauth2_active_access_token_user(user: Annotated[User, Depends(oauth2_a
     # If user is not active
     if not user.is_active:
         logger.debug(f'User {user.username} is not active.')
-        raise exception
+        raise exception_unauthorized
 
     return user
 
@@ -124,7 +134,7 @@ async def oauth2_active_refresh_token_user(user: Annotated[User, Depends(oauth2_
     # If user is not active
     if not user.is_active:
         logger.debug(f'User {user.username} is not active.')
-        raise exception
+        raise exception_unauthorized
 
     return user
 
@@ -134,7 +144,7 @@ async def oauth2_active_admin_access_token_user(user: Annotated[User, Depends(oa
     # If user is not admin
     if not user.is_admin:
         logger.debug(f'User {user.username} is not admin.')
-        raise exception
+        raise exception_forbidden
 
     return user
 
@@ -144,7 +154,7 @@ async def oauth2_path_verified_user_id_with_active_access_token_user(
     # If non-admin user is trying to access other user
     if not user.is_admin and user.id != user_id:
         logger.debug(f'Non-admin user {user.username} is forbidden from accessing other user with id {user_id}.')
-        raise exception
+        raise exception_forbidden
 
     return user_id, user
 
@@ -161,6 +171,6 @@ async def oauth2_path_verified_user_with_active_access_token_user(
     # If user does not exist
     if not user:
         logger.debug(f'No user with id {user_id} was found.')
-        raise exception
+        raise exception_not_found
 
     return user, access_token_user
