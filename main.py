@@ -1,7 +1,10 @@
 from typing import Union, Annotated
 
+import sqlalchemy.exc
 from fastapi import FastAPI, Depends
 from pydantic import BaseModel
+from starlette import status
+from starlette.responses import JSONResponse
 
 from api import tokens, users
 from authentication import oauth2_token, oauth2_active_access_token_user
@@ -30,6 +33,16 @@ class HashRequest(BaseModel):
 
 class HashResponse(BaseModel):
     hashed_text: str
+
+
+@app.exception_handler(sqlalchemy.exc.IntegrityError)
+async def integrity_error_exception_handler(_, __):
+    return JSONResponse(
+        status_code=status.HTTP_409_CONFLICT,
+        content={
+            'detail': 'Conflicting request',
+        },
+    )
 
 
 @app.get('/')

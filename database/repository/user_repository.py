@@ -15,3 +15,7 @@ def find_by_id(db: Session, user_id: int) -> Optional[User]:
 
 def find_by_username(db: Session, username: str) -> Optional[User]:
     return db.query(User).filter(User.username == username).first()
+
+
+def save(db: Session, user: User):
+    db.add(user)
