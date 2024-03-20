@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Tuple
 
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
@@ -139,11 +139,28 @@ async def oauth2_active_admin_access_token_user(user: Annotated[User, Depends(oa
     return user
 
 
-async def oauth2_path_verified_active_access_token_user(user: Annotated[User, Depends(oauth2_active_access_token_user)],
-                                                        user_id: int) -> User:
+async def oauth2_path_verified_user_id_with_active_access_token_user(
+        user: Annotated[User, Depends(oauth2_active_access_token_user)], user_id: int) -> Tuple[int, User]:
     # If non-admin user is trying to access other user
     if not user.is_admin and user.id != user_id:
         logger.debug(f'Non-admin user {user.username} is forbidden from accessing other user with id {user_id}.')
         raise exception
 
-    return user
+    return user_id, user
+
+
+async def oauth2_path_verified_user_with_active_access_token_user(
+        user_id_with_user: Annotated[Tuple[int, User], Depends(
+            oauth2_path_verified_user_id_with_active_access_token_user)], db: Session = Depends(get_db))\
+        -> Tuple[User, User]:
+    user_id, access_token_user = user_id_with_user
+
+    # Get user from database
+    user = user_repository.find_by_id(db, user_id)
+
+    # If user does not exist
+    if not user:
+        logger.debug(f'No user with id {user_id} was found.')
+        raise exception
+
+    return user, access_token_user
