@@ -50,12 +50,8 @@ async def get_users(db: Session = Depends(get_db)):
              status_code=status.HTTP_201_CREATED)
 async def create_user(user: UserPost, db: Session = Depends(get_db)):
     # Generate user data
-    db_user = User(
-        username=user.username,
-        hashed_password=cryptography.hash(user.password),
-        email=user.email,
-        is_admin=user.is_admin,
-    )
+    db_user = User(**user.dict(exclude={'password'}))
+    db_user.hashed_password = cryptography.hash(user.password)
 
     # Insert record
     user_repository.save(db, db_user)
