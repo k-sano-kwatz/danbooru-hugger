@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Tuple
+from typing import Tuple, Union
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
@@ -39,6 +39,14 @@ class UserPost(UserBase):
 
 class UserPut(UserPost):
     is_active: bool
+
+
+class UserPatch(BaseModel):
+    username: Union[str, None] = None
+    password: Union[str, None] = None
+    email: Union[str, None] = None
+    is_admin: Union[bool, None] = None
+    is_active: Union[bool, None] = None
 
 
 @router.get('', dependencies=[Depends(oauth2_active_admin_access_token_user)], response_model=list[UserGet])
@@ -81,6 +89,30 @@ async def update_user(user: UserPut, user_with_access_token_user: Tuple[User, Us
     # Update user data
     db_user.update(user.dict(exclude={'password'}))
     db_user.hashed_password = cryptography.hash(user.password)
+
+    # Update record
+    user_repository.save(db, db_user)
+
+    # Commit
+    db.commit()
+
+    return db_user
+
+
+@router.patch('/{user_id}', response_model=UserGet)
+async def update_user(user: UserPatch, user_with_access_token_user: Tuple[User, User] = Depends(
+        oauth2_path_verified_user_with_active_access_token_user), db: Session = Depends(get_db)):
+    db_user, access_token_user = user_with_access_token_user
+
+    # If non-admin user is trying to promote to admin user
+    if not access_token_user.is_admin and user.is_admin:
+        raise exception_forbidden
+
+    # Update user data
+    db_user.update(user.dict(exclude={'password'}, exclude_unset=True))
+    # If user password is set
+    if user.password:
+        db_user.hashed_password = cryptography.hash(user.password)
 
     # Update record
     user_repository.save(db, db_user)
